@@ -78,7 +78,7 @@ def _warm_up_ocr():
     """在后台线程中预热OCR引擎"""
     from ocr import init_ocr
     logger.info("正在预热 OCR 引擎...")
-    init_ocr(OCR_BACKEND)
+    init_ocr()
     logger.info("OCR 引擎预热完成")
 
 
@@ -499,7 +499,7 @@ async def ocr_endpoint(file: UploadFile = File(...)):
 
     try:
         # 确保OCR引擎已初始化
-        init_ocr(OCR_BACKEND)
+        init_ocr()
         text, confidence = recognize_text(image_bytes, backend=OCR_BACKEND)
     except ImportError as e:
         raise HTTPException(
@@ -545,7 +545,7 @@ async def ocr_base64(request: OCRRequest):
         )
 
     try:
-        init_ocr(OCR_BACKEND)
+        init_ocr()
         text, confidence = recognize_text(image_bytes, backend=OCR_BACKEND)
     except ImportError as e:
         raise HTTPException(status_code=503, detail=f"OCR引擎未安装: {str(e)}")
