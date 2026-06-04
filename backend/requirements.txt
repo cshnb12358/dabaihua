@@ -8,8 +8,9 @@ python-dotenv>=1.0.0
 
 # ── OCR（按需选择其一）────────────────────────────────
 # 推荐：PaddleOCR（百度开源，中文识别最佳）
-paddleocr>=2.7.0
-paddlepaddle>=3.0.0  # 或 paddlepaddle-cpu（CPU版本）
+paddleocr==2.9.1
+paddlepaddle==2.6.2
+numpy<2
 # 备选：EasyOCR（更轻量，无PaddlePaddle依赖）
 # easyocr>=1.7.0
 
