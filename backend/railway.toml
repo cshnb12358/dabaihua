@@ -1,0 +1,15 @@
+# Railway 部署配置
+# 在 backend/ 目录下运行: railway up
+
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python main.py"
+restartPolicyType = "ON_FAILURE"
+
+[service]
+port = 8000
+healthcheckPath = "/api/health"
+healthcheckTimeout = 10

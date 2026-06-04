@@ -1,0 +1,16 @@
+{
+  "name": "大白话考公 — 每道题都讲大白话",
+  "short_name": "大白话考公",
+  "description": "拍照/粘贴题目，AI用大白话分步讲解，举一反三巩固练习",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📚</text></svg>",
+      "sizes": "100x100",
+      "type": "image/svg+xml"
+    }
+  ]
+}

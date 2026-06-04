@@ -1,0 +1,21 @@
+# ── 核心依赖 ──────────────────────────────────────────
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+httpx>=0.25.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+
+# ── OCR（按需选择其一）────────────────────────────────
+# 推荐：PaddleOCR（百度开源，中文识别最佳）
+paddleocr>=2.7.0
+paddlepaddle>=3.0.0  # 或 paddlepaddle-cpu（CPU版本）
+# 备选：EasyOCR（更轻量，无PaddlePaddle依赖）
+# easyocr>=1.7.0
+
+# ── 图片处理（OCR预处理用）────────────────────────────
+Pillow>=10.0.0
+
+# ── 生产环境（可选）────────────────────────────────────
+# redis>=5.0.0          # Redis缓存（替换内存缓存）
+# gunicorn>=21.0.0      # 生产环境WSGI服务器

@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- 微信分享卡片 -->
+<meta property="og:title" content="大白话考公 — 每道题都讲大白话">
+<meta property="og:description" content="每一道错题，都值得被讲透。看不懂的解析，换个角度再讲。内容由AI生成，仅供参考">
+<meta property="og:type" content="website">
+<!-- PWA：可添加到手机桌面 -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#6366f1">
+<!-- 微信浏览器：禁止用户长按选中文字（提升App感） -->
+<meta name="format-detection" content="telephone=no">
+<title>大白话考公 — 每一道错题，都值得被讲透</title>
+
+<!-- Tailwind CSS CDN（小程序迁移时改为 Tailwind CLI 构建） -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: { 50:'#eef2ff', 100:'#e0e7ff', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca' },
+        warm:  { 50:'#fffbeb', 100:'#fef3c7', 500:'#f59e0b', 600:'#d97706' },
+      },
+    }
+  }
+}
+</script>
+
+<style>
+  /* ── 自定义动画 ─────────────────────────────── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-dot {
+    0%, 80%, 100% { transform: scale(0); opacity: 0; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-fadeInUp {
+    animation: fadeInUp 0.4s ease-out forwards;
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  .dot-typing {
+    display: flex; gap: 4px; align-items: center; justify-content: center;
+  }
+  .dot-typing span {
+    width: 8px; height: 8px; border-radius: 50%; background: #6366f1;
+    animation: pulse-dot 1.4s infinite ease-in-out both;
+  }
+  .dot-typing span:nth-child(1) { animation-delay: 0s; }
+  .dot-typing span:nth-child(2) { animation-delay: 0.16s; }
+  .dot-typing span:nth-child(3) { animation-delay: 0.32s; }
+
+  /* ── 基础样式 ───────────────────────────────── */
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f8fafc; }
+  .app-container { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); padding: 20px; margin-bottom: 12px; }
+  .card-highlight { border-left: 4px solid #6366f1; }
+  .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; border: none; border-radius: 12px; padding: 14px 28px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%; }
+  .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.5; transform: none; }
+  .btn-outline { background: #fff; color: #6366f1; border: 2px solid #e0e7ff; border-radius: 12px; padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn-outline:active { background: #eef2ff; border-color: #6366f1; }
+
+  /* ── Loading 文案切换 ────────────────────────── */
+  .loading-text { transition: opacity 0.3s; }
+
+  /* 隐藏文件输入，用按钮触发 */
+  #camera-input { display: none; }
+
+  /* 错题本卡片 */
+  .notebook-item { border-bottom: 1px solid #f1f5f9; padding: 14px 0; }
+  .notebook-item:last-child { border-bottom: none; }
+
+  /* 步骤卡片 */
+  .step-card {
+    background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .step-number {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #6366f1; color: #fff; font-size: 13px; font-weight: 700;
+    margin-right: 8px; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ═══════════════ 顶部导航 ═══════════════ -->
+  <header class="px-5 pt-6 pb-3 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">📚 大白话考公</h1>
+      <p class="text-sm text-slate-400 mt-1">
+        每一道错题，都值得被讲透
+        <span id="social-proof" class="hidden text-brand-500 font-semibold">· 已帮 <span id="solve-count">0</span> 人讲解</span>
+      </p>
+    </div>
+    <button onclick="showNotebook()" class="relative text-2xl p-2" title="我的错题本">
+      📝
+      <span id="notebook-badge" class="hidden absolute -top-0 -right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">0</span>
+    </button>
+  </header>
+
+  <!-- ═══════════════ 主内容区 ═══════════════ -->
+  <main class="flex-1 px-4 pb-4">
+
+    <!-- ── 输入卡片 ── -->
+    <div class="card" id="input-card">
+      <!-- Tab 切换 -->
+      <div class="flex mb-3 bg-slate-100 rounded-xl p-1">
+        <button id="tab-text" class="flex-1 py-2.5 text-sm font-semibold rounded-lg bg-white shadow-sm text-slate-700 transition" onclick="switchInputTab('text')">
+          ✏️ 粘贴题目
+        </button>
+        <button id="tab-camera" class="flex-1 py-2.5 text-sm font-semibold rounded-lg text-slate-400 transition" onclick="switchInputTab('camera')">
+          📷 拍照上传
+        </button>
+      </div>
+
+      <!-- 文字输入区 -->
+      <div id="panel-text">
+        <textarea id="question-input"
+          rows="5"
+          placeholder="把题目粘贴到这里&#10;&#10;例如：甲、乙两人从相距100公里的两地同时出发相向而行，甲的速度是6公里/小时，乙的速度是4公里/小时，问几小时后两人相遇？"
+          class="w-full border border-slate-200 rounded-xl p-4 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+        ></textarea>
+
+        <div class="flex items-center gap-2 mt-3">
+          <span class="text-sm text-slate-400 whitespace-nowrap">正确答案（选填）：</span>
+          <input id="correct-answer-input"
+            type="text"
+            placeholder="如：D 或 10小时，不填AI帮你判断"
+            class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+          >
+        </div>
+
+        <button id="submit-btn" class="btn-primary mt-3" onclick="submitQuestion()">
+          🚀 这道题为什么选这个
+        </button>
+        <p class="text-center text-xs text-slate-300 mt-2 cursor-pointer hover:text-brand-400 transition" onclick="loadDemoQuestion()">
+          没有题目？点我试试示例 👈
+        </p>
+      </div>
+
+      <!-- 拍照上传区 -->
+      <div id="panel-camera" class="hidden">
+        <div id="camera-dropzone"
+          class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-brand-500 hover:bg-brand-50 transition"
+          onclick="document.getElementById('camera-input').click()">
+          <div class="text-4xl mb-2">📷</div>
+          <p class="text-slate-600 font-medium">点击拍照或选择图片</p>
+          <p class="text-slate-400 text-xs mt-1">支持 JPG / PNG / BMP / WEBP，最大 10MB</p>
+        </div>
+        <input type="file" id="camera-input" accept="image/*" onchange="handleImageUpload(this)">
+
+        <!-- 图片裁剪区 -->
+        <div id="crop-section" class="hidden mt-3">
+          <p class="text-xs text-slate-500 mb-2 text-center">拖动框的边角调整范围，框住题目文字</p>
+          <div class="relative inline-block mx-auto bg-slate-200 rounded-xl overflow-hidden" id="crop-wrapper" style="touch-action: none; max-width: 100%;">
+            <img id="crop-image" src="" class="block max-w-full">
+            <div id="crop-rect" class="absolute border-2 border-brand-500 bg-brand-500/20" style="display:none;">
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:0;left:0;cursor:nw-resize;"></div>
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:0;left:50%;cursor:n-resize;"></div>
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:0;left:100%;cursor:ne-resize;"></div>
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:50%;left:0;cursor:w-resize;"></div>
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:50%;left:100%;cursor:e-resize;"></div>
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:100%;left:0;cursor:sw-resize;"></div>
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:100%;left:50%;cursor:s-resize;"></div>
+              <div class="crop-handle absolute w-5 h-5 bg-white border-2 border-brand-500 rounded-full -translate-x-1/2 -translate-y-1/2" style="top:100%;left:100%;cursor:se-resize;"></div>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-3 justify-center">
+            <button class="btn-outline text-sm py-2 px-4" onclick="resetCrop()">重新拍照</button>
+            <button class="btn-primary text-sm py-2 px-6 flex-1 max-w-48" onclick="confirmCrop()">裁剪并识别</button>
+          </div>
+        </div>
+
+        <!-- OCR 结果预览 -->
+        <div id="ocr-preview" class="hidden mt-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm text-slate-500">识别结果：</span>
+            <span id="ocr-confidence" class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full"></span>
+          </div>
+          <textarea id="ocr-text" rows="4"
+            class="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+            placeholder="OCR识别文字将显示在这里，你可以编辑修改后提交..."
+          ></textarea>
+          <div class="flex items-center gap-2 mt-2">
+            <span class="text-sm text-slate-400 whitespace-nowrap">正确答案（选填）：</span>
+            <input id="ocr-correct-answer" type="text" placeholder="不填AI帮你判断"
+              class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+          <button class="btn-primary mt-2" onclick="submitOCRText()">
+            🚀 用这段文字帮我讲解
+          </button>
+        </div>
+
+        <!-- OCR 加载状态 -->
+        <div id="ocr-loading" class="hidden text-center py-4">
+          <div class="dot-typing"><span></span><span></span><span></span></div>
+          <p class="text-slate-400 text-sm mt-2">正在识别图片中的文字...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 加载动画 ── -->
+    <div id="loading-card" class="hidden card text-center py-10">
+      <div class="dot-typing mb-4"><span></span><span></span><span></span></div>
+      <p id="loading-text" class="text-slate-500 text-sm loading-text">老师正在读题...</p>
+    </div>
+
+    <!-- ── 结果卡片 ── -->
+    <div id="result-section" class="hidden">
+
+      <!-- 大白话题意 -->
+      <div class="card card-highlight animate-fadeInUp" id="simple-card">
+        <div class="flex items-start gap-3">
+          <span class="text-2xl">💡</span>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-brand-600 mb-2">大白话题意</h3>
+            <p id="simple-explanation" class="text-slate-700 leading-relaxed"></p>
+            <div class="flex items-center gap-2 mt-2 flex-wrap">
+              <span id="question-type-tag" class="inline-block text-xs bg-brand-50 text-brand-600 px-2 py-0.5 rounded-full"></span>
+              <span class="inline-block text-xs bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">🤖 AI生成，仅供参考</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 考点快速信息 -->
+      <div class="flex gap-2 animate-fadeInUp" style="animation-delay: 0.05s" id="meta-row">
+        <span id="exam-point-tag" class="hidden text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full"></span>
+        <span id="difficulty-tag" class="hidden text-xs bg-warm-50 text-warm-600 px-2 py-1 rounded-full"></span>
+      </div>
+
+      <!-- 易错陷阱 -->
+      <div id="mistake-card" class="hidden card animate-fadeInUp" style="animation-delay: 0.08s; border-left: 4px solid #ef4444;">
+        <div class="flex items-start gap-3">
+          <span class="text-xl">⚠️</span>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-red-500 mb-1">易错陷阱</h3>
+            <p id="common-mistake" class="text-sm text-slate-600 leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分步解析 -->
+      <div class="card animate-fadeInUp" style="animation-delay: 0.1s" id="steps-card">
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">📝 分步解析</h3>
+        <div id="step-list"></div>
+      </div>
+
+      <!-- 秒杀技巧 -->
+      <div id="tip-card" class="hidden card animate-fadeInUp" style="animation-delay: 0.12s; background: linear-gradient(135deg, #fefce8 0%, #fffbeb 100%);">
+        <div class="flex items-start gap-3">
+          <span class="text-xl">⚡</span>
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-warm-600 mb-1">考场秒杀技巧</h3>
+            <p id="exam-tip" class="text-sm text-slate-600 leading-relaxed"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 反馈投票 -->
+      <div class="flex items-center justify-center gap-4 mt-3 animate-fadeInUp text-sm" style="animation-delay: 0.15s" id="feedback-bar">
+        <span class="text-slate-400">这个解析对你有用吗？</span>
+        <button class="px-4 py-1.5 rounded-full border border-slate-200 text-slate-500 hover:bg-green-50 hover:text-green-600 hover:border-green-300 transition" onclick="voteFeedback('useful')">👍 有用</button>
+        <button class="px-4 py-1.5 rounded-full border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300 transition" onclick="voteFeedback('not_useful')">👎 没用</button>
+      </div>
+
+      <!-- 讲解历史切换 -->
+      <div id="history-toggle" class="hidden text-center text-xs animate-fadeInUp" style="animation-delay: 0.18s">
+        <span id="history-info" class="text-slate-400"></span>
+        <button class="text-brand-500 font-semibold ml-1" onclick="toggleHistoryView()" id="history-toggle-btn"></button>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="flex gap-3 mt-3 animate-fadeInUp" style="animation-delay: 0.2s" id="action-buttons">
+        <button class="btn-outline flex-1" onclick="requestRephrase()">
+          🔄 没懂，再讲一遍
+        </button>
+        <button class="btn-primary flex-1" onclick="showSimilarQuestions()" id="understood-btn">
+          ✅ 懂了，继续
+        </button>
+      </div>
+
+      <!-- 重讲中的加载 -->
+      <div id="rephrase-loading" class="hidden card text-center py-8">
+        <div class="dot-typing mb-3"><span></span><span></span><span></span></div>
+        <p class="text-slate-500 text-sm">老师换个角度重新讲解中...</p>
+      </div>
+
+      <!-- 举一反三 -->
+      <div id="similar-section" class="hidden card animate-fadeInUp">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-700">🎯 举一反三</h3>
+          <span class="text-xs text-slate-400">核心逻辑相同，换场景/换数字</span>
+        </div>
+        <div id="similar-list"></div>
+
+        <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+          <button class="btn-outline flex-1 text-sm py-2" onclick="saveToNotebook()">
+            💾 收藏
+          </button>
+          <button class="btn-outline flex-1 text-sm py-2" onclick="shareApp()">
+            📤 分享给考友
+          </button>
+          <button class="btn-outline flex-1 text-sm py-2" onclick="resetAll()">
+            🔄 新题目
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── 错误提示 ── -->
+    <div id="error-card" class="hidden card bg-red-50 border border-red-200 animate-fadeInUp">
+      <div class="flex items-start gap-3">
+        <span class="text-xl">⚠️</span>
+        <div>
+          <p class="text-red-700 font-medium text-sm">出错了</p>
+          <p id="error-message" class="text-red-600 text-sm mt-1"></p>
+          <button class="text-red-700 text-sm font-semibold underline mt-2" onclick="resetAll()">返回重试</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AI声明 ── -->
+    <div class="text-center text-xs text-slate-300 py-2" id="ai-disclaimer">
+      内容由AI生成，仅供参考 · 不构成考试指导建议
+    </div>
+
+  </main>
+
+  <!-- ═══════════════ 底部导航 ═══════════════ -->
+  <nav class="flex border-t border-slate-200 bg-white px-4 py-2 safe-area-bottom">
+    <button id="nav-home" class="flex-1 flex flex-col items-center py-1 text-brand-600" onclick="switchPage('home')">
+      <span class="text-xl">📖</span>
+      <span class="text-xs font-semibold mt-0.5">首页</span>
+    </button>
+    <button id="nav-history" class="flex-1 flex flex-col items-center py-1 text-slate-400" onclick="switchPage('history')">
+      <span class="text-xl">🕐</span>
+      <span class="text-xs font-semibold mt-0.5">历史</span>
+    </button>
+    <button id="nav-notebook" class="flex-1 flex flex-col items-center py-1 text-slate-400" onclick="switchPage('notebook')">
+      <span class="text-xl">📝</span>
+      <span class="text-xs font-semibold mt-0.5">我的错题本</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════ 错题本页面 ═══════════════ -->
+  <div id="notebook-page" class="hidden fixed inset-0 bg-white z-50 flex flex-col">
+    <header class="px-5 pt-6 pb-3 flex items-center gap-3 border-b border-slate-100">
+      <button onclick="switchPage('home')" class="text-2xl p-1">←</button>
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">我的错题本</h2>
+        <p class="text-xs text-slate-400" id="notebook-count">共 0 道</p>
+      </div>
+      <div class="flex-1"></div>
+      <button onclick="clearNotebook()" class="text-sm text-red-400 font-semibold">清空</button>
+    </header>
+
+    <!-- 分类筛选 -->
+    <div class="px-4 py-2 flex gap-1.5 overflow-x-auto border-b border-slate-50" id="notebook-filters">
+      <button class="filter-btn whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full bg-brand-50 text-brand-600" data-filter="全部">全部</button>
+      <button class="filter-btn whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" data-filter="数量关系">数量关系</button>
+      <button class="filter-btn whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" data-filter="判断推理">判断推理</button>
+      <button class="filter-btn whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" data-filter="言语理解">言语理解</button>
+      <button class="filter-btn whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" data-filter="资料分析">资料分析</button>
+      <button class="filter-btn whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" data-filter="常识判断">常识判断</button>
+      <button class="filter-btn whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" data-filter="综合">综合</button>
+    </div>
+
+    <div id="notebook-list" class="flex-1 overflow-y-auto px-4 py-2">
+      <div class="text-center text-slate-400 py-20" id="notebook-empty">
+        <span class="text-5xl block mb-3">📭</span>
+        <p>还没有收藏题目</p>
+        <p class="text-sm mt-1">搞懂一道题后，点击"收藏到错题本"</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ 历史记录页面 ═══════════════ -->
+  <div id="history-page" class="hidden fixed inset-0 bg-white z-50 flex flex-col">
+    <header class="px-5 pt-6 pb-3 flex items-center gap-3 border-b border-slate-100">
+      <button onclick="switchPage('home')" class="text-2xl p-1">←</button>
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">历史记录</h2>
+        <p class="text-xs text-slate-400" id="history-count">最近 0 道</p>
+      </div>
+      <div class="flex-1"></div>
+      <button onclick="clearHistory()" class="text-sm text-red-400 font-semibold">清空</button>
+    </header>
+    <div id="history-list" class="flex-1 overflow-y-auto px-4 py-2">
+      <div class="text-center text-slate-400 py-20" id="history-empty">
+        <span class="text-5xl block mb-3">🕐</span>
+        <p>还没有提问记录</p>
+        <p class="text-sm mt-1">每次提交题目都会自动保存在这里</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-container -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// 环境检测
+// ═══════════════════════════════════════════════════════════
+
+// 检测是否在微信浏览器中
+const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// API地址：自动检测
+// 生产环境（有端口/域名）= 同域请求，无CORS
+// 本地file://打开 = 连开发服务器
+const API_BASE = (location.protocol === 'file:')
+  ? 'http://localhost:5004'
+  : '';  // 任何http/https访问都走同域
+
+// ═══════════════════════════════════════════════════════════
+// 全局状态
+// ═══════════════════════════════════════════════════════════
+
+const state = {
+  page: 'home',           // home | notebook
+  inputTab: 'text',       // text | camera
+  questionText: '',       // 当前题目文本
+  correctAnswer: '',      // 用户提供的正确答案
+  currentResponse: null,  // 当前API返回的完整数据
+  originalSimilar: null,  // 首次调用返回的相似题（rephrase时复用）
+  isLoading: false,
+  explanationHistory: [], // 每次"没懂"前把旧讲解存入，方便回溯
+  showingHistoryIndex: -1, // -1 = 看最新，0/1/2... = 看历史
+};
+
+// ── DOM 缓存 ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+// ═══════════════════════════════════════════════════════════
+// 页面切换
+// ═══════════════════════════════════════════════════════════
+
+function switchPage(page) {
+  state.page = page;
+  // 重置所有页面
+  $('notebook-page').classList.add('hidden');
+  $('history-page').classList.add('hidden');
+  ['nav-home', 'nav-history', 'nav-notebook'].forEach(id => {
+    $(id).classList.remove('text-brand-600');
+    $(id).classList.add('text-slate-400');
+  });
+
+  if (page === 'notebook') {
+    $('notebook-page').classList.remove('hidden');
+    $('nav-notebook').classList.remove('text-slate-400');
+    $('nav-notebook').classList.add('text-brand-600');
+    renderNotebook();
+  } else if (page === 'history') {
+    $('history-page').classList.remove('hidden');
+    $('nav-history').classList.remove('text-slate-400');
+    $('nav-history').classList.add('text-brand-600');
+    renderHistory();
+  } else {
+    // home
+    $('nav-home').classList.remove('text-slate-400');
+    $('nav-home').classList.add('text-brand-600');
+  }
+}
+
+function showNotebook() {
+  switchPage('notebook');
+}
+
+// ═══════════════════════════════════════════════════════════
+// 输入切换（粘贴 / 拍照）
+// ═══════════════════════════════════════════════════════════
+
+function switchInputTab(tab) {
+  state.inputTab = tab;
+  if (tab === 'text') {
+    $('panel-text').classList.remove('hidden');
+    $('panel-camera').classList.add('hidden');
+    // 清理OCR/裁剪状态
+    setVisible('crop-section', false);
+    setVisible('ocr-preview', false);
+    setVisible('ocr-loading', false);
+    const ot = $('ocr-text'); if (ot) ot.value = '';
+    const oa = $('ocr-correct-answer'); if (oa) oa.value = '';
+    const oc = $('ocr-confidence'); if (oc) oc.textContent = '';
+    $('tab-text').classList.add('bg-white', 'shadow-sm', 'text-slate-700');
+    $('tab-text').classList.remove('text-slate-400');
+    $('tab-camera').classList.remove('bg-white', 'shadow-sm', 'text-slate-700');
+    $('tab-camera').classList.add('text-slate-400');
+  } else {
+    $('panel-text').classList.add('hidden');
+    $('panel-camera').classList.remove('hidden');
+    $('tab-camera').classList.add('bg-white', 'shadow-sm', 'text-slate-700');
+    $('tab-camera').classList.remove('text-slate-400');
+    $('tab-text').classList.remove('bg-white', 'shadow-sm', 'text-slate-700');
+    $('tab-text').classList.add('text-slate-400');
+  }
+}
+
+// 安全设置元素可见性
+function setVisible(id, visible) {
+  const el = document.getElementById(id);
+  if (el) { if (visible) el.classList.remove('hidden'); else el.classList.add('hidden'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 拍照 / OCR 处理
+// ═══════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// 图片裁剪 + OCR
+// ═══════════════════════════════════════════════════════════
+let cropImg = null;
+
+async function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  if (!file.type.match(/image\/(jpeg|png|bmp|webp)/)) { showToast('不支持的图片格式'); return; }
+  if (file.size > 15*1024*1024) { showToast('图片太大'); return; }
+
+  const img = new Image();
+  img.onload = () => {
+    cropImg = img;
+    // 设置图片
+    $('crop-image').src = img.src;
+    $('crop-section').classList.remove('hidden');
+    ['ocr-preview','ocr-loading'].forEach(id => {const el = $(id); if(el) el.classList.add('hidden');});
+
+    // 等图片渲染后初始化裁剪框
+    setTimeout(initCropRect, 200);
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+function getImgDisplaySize() {
+  const el = $('crop-image');
+  return { w: el.clientWidth, h: el.clientHeight };
+}
+
+function initCropRect() {
+  const { w, h } = getImgDisplaySize();
+  if (!w || !h) { setTimeout(initCropRect, 200); return; }
+
+  // 默认裁中间60%区域
+  const cw = Math.round(w * 0.75);
+  const ch = Math.round(h * 0.45);
+  const cx = Math.round((w - cw) / 2);
+  const cy = Math.round((h - ch) / 2);
+
+  const rect = $('crop-rect');
+  rect.style.display = 'block';
+  rect.style.left = cx + 'px';
+  rect.style.top = cy + 'px';
+  rect.style.width = cw + 'px';
+  rect.style.height = ch + 'px';
+
+  bindCropEvents();
+}
+
+function bindCropEvents() {
+  const wrapper = $('crop-wrapper');
+  const rect = $('crop-rect');
+  let dragType = null; // 'move' | handle index 0-7
+  let startX, startY, startL, startT, startW, startH;
+
+  const getHandleIdx = (el) => {
+    const handles = rect.querySelectorAll('.crop-handle');
+    for (let i = 0; i < handles.length; i++) {
+      if (handles[i] === el || handles[i].contains(el)) return i;
+    }
+    return -1;
+  };
+
+  wrapper.onpointerdown = (e) => {
+    const handleIdx = getHandleIdx(e.target);
+    if (handleIdx >= 0) {
+      dragType = handleIdx;
+    } else if (rect.contains(e.target)) {
+      dragType = 'move';
+    } else {
+      return;
+    }
+    startX = e.clientX; startY = e.clientY;
+    startL = parseInt(rect.style.left);
+    startT = parseInt(rect.style.top);
+    startW = parseInt(rect.style.width);
+    startH = parseInt(rect.style.height);
+    wrapper.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  wrapper.onpointermove = (e) => {
+    if (dragType === null) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const { w: iw, h: ih } = getImgDisplaySize();
+
+    let nl = startL, nt = startT, nw = startW, nh = startH;
+
+    // 0:tl  1:t  2:tr  3:l  4:r  5:bl  6:b  7:br
+    if (dragType === 'move') {
+      nl = Math.max(0, Math.min(iw - nw, startL + dx));
+      nt = Math.max(0, Math.min(ih - nh, startT + dy));
+    } else {
+      if ([0,3,5].includes(dragType)) { nl = Math.max(0, Math.min(startL + startW - 40, startL + dx)); nw = startW + (startL - nl); }
+      if ([2,4,7].includes(dragType)) { nw = Math.max(40, Math.min(iw - startL, startW + dx)); }
+      if ([0,1,2].includes(dragType)) { nt = Math.max(0, Math.min(startT + startH - 40, startT + dy)); nh = startH + (startT - nt); }
+      if ([5,6,7].includes(dragType)) { nh = Math.max(40, Math.min(ih - startT, startH + dy)); }
+    }
+
+    rect.style.left = nl + 'px';
+    rect.style.top = nt + 'px';
+    rect.style.width = nw + 'px';
+    rect.style.height = nh + 'px';
+  };
+
+  wrapper.onpointerup = () => { dragType = null; };
+}
+
+function resetCrop() {
+  $('crop-section').classList.add('hidden');
+  document.getElementById('camera-input').click();
+}
+
+async function confirmCrop() {
+  const rect = $('crop-rect');
+  const cl = parseInt(rect.style.left) || 0;
+  const ct = parseInt(rect.style.top) || 0;
+  const cw = parseInt(rect.style.width) || 100;
+  const ch = parseInt(rect.style.height) || 100;
+  const { w: dw, h: dh } = getImgDisplaySize();
+
+  // 防除零：确保图片已渲染
+  if (!dw || !dh || !cropImg || !cropImg.width) {
+    showToast('图片加载中，请稍后再试');
+    return;
+  }
+
+  $('crop-section').classList.add('hidden');
+  $('ocr-loading').classList.remove('hidden');
+
+  // 映射回原图坐标
+  const scaleX = cropImg.width / dw;
+  const scaleY = cropImg.height / dh;
+  const sx = Math.max(0, Math.round(cl * scaleX));
+  const sy = Math.max(0, Math.round(ct * scaleY));
+  const sw = Math.min(cropImg.width - sx, Math.max(1, Math.round(cw * scaleX)));
+  const sh = Math.min(cropImg.height - sy, Math.max(1, Math.round(ch * scaleY)));
+
+  // 确保裁剪区域有效
+  if (sw < 1 || sh < 1) {
+    $('crop-section').classList.add('hidden');
+    showToast('裁剪区域无效，请重新框选');
+    return;
+  }
+
+  const canvas = document.createElement('canvas');
+  // 限制最大分辨率，手机canvas太大会导致toDataURL内存溢出
+  const MAX_DIM = 2400;
+  let canvasW = sw, canvasH = sh;
+  if (Math.max(canvasW, canvasH) > MAX_DIM) {
+    const ratio = MAX_DIM / Math.max(canvasW, canvasH);
+    canvasW = Math.round(canvasW * ratio);
+    canvasH = Math.round(canvasH * ratio);
+  }
+  canvas.width = canvasW;
+  canvas.height = canvasH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(cropImg, sx, sy, sw, sh, 0, 0, canvasW, canvasH);
+
+  // 直接用 toBlob，避免 toDataURL 的 base64 内存开销
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b && b.size > 0) resolve(b);
+      else reject(new Error('图片生成失败，请重试'));
+    }, 'image/jpeg', 0.92);
+  });
+  const file = new File([blob], 'crop.jpg', { type: 'image/jpeg' });
+
+  doOCR(file);
+}
+
+async function doOCR(file) {
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const resp = await fetch(`${API_BASE}/api/ocr`, { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || 'OCR失败');
+
+    $('ocr-loading').classList.add('hidden');
+    $('ocr-preview').classList.remove('hidden');
+    $('ocr-text').value = data.text;
+    $('ocr-confidence').textContent = data.confidence ? `置信度 ${(data.confidence*100).toFixed(0)}%` : '识别完成';
+  } catch (err) {
+    $('ocr-loading').classList.add('hidden');
+    console.error('OCR错误:', err.message || err);
+    // 显示具体错误
+    const msg = err.message || String(err);
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      showToast('网络连接失败，请检查网络后重试 📡');
+    } else if (msg.includes('unrecognized') || msg.includes('identify')) {
+      showToast('图片格式有误，请重新拍照 📷');
+    } else {
+      showToast('识别失败: ' + msg.slice(0, 30));
+    }
+  }
+}
+
+function submitOCRText() {
+  const text = $('ocr-text').value.trim();
+  if (!text) {
+    showToast('📷 请先识别或输入文字');
+    return;
+  }
+  state.questionText = text;
+  // 切回文字Tab，同步填入题目和答案
+  switchInputTab('text');
+  $('question-input').value = text;
+  const answer = $('ocr-correct-answer').value.trim() || '';
+  $('correct-answer-input').value = answer;
+  state.correctAnswer = answer;
+  doSubmit(text, answer);
+}
+
+// ═══════════════════════════════════════════════════════════
+// 提交题目 & API 调用
+// ═══════════════════════════════════════════════════════════
+
+function submitQuestion() {
+  const text = $('question-input').value.trim();
+  if (!text) {
+    $('question-input').style.borderColor = '#fca5a5';
+    $('question-input').focus();
+    setTimeout(() => { $('question-input').style.borderColor = ''; }, 1500);
+    showToast('📝 请先输入题目内容');
+    return;
+  }
+  const answer = $('correct-answer-input').value.trim() || '';
+  state.questionText = text;
+  state.correctAnswer = answer;
+  doSubmit(text, answer);
+}
+
+async function doSubmit(questionText, correctAnswer = '') {
+  if (state.isLoading) return;
+  state.isLoading = true;
+
+  // 切换到加载状态
+  hideResult();
+  showLoading();
+  $('submit-btn').disabled = true;
+
+  // 轮流显示加载文案
+  const loadingTexts = ['正在读题...', '拆解思路中...', '马上就能讲透了...'];
+  let textIdx = 0;
+  const textInterval = setInterval(() => {
+    textIdx = (textIdx + 1) % loadingTexts.length;
+    $('loading-text').textContent = loadingTexts[textIdx];
+  }, 2000);
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    const reqBody = { question_text: questionText, rephrase: false };
+    if (correctAnswer) reqBody.correct_answer = correctAnswer;
+
+    const resp = await fetch(`${API_BASE}/api/explain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    const text = await resp.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.warn('JSON parse failed, retrying...');
+      const retryResp = await fetch(`${API_BASE}/api/explain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reqBody),
+      });
+      data = await retryResp.json();
+    }
+
+    if (!resp.ok) {
+      throw new Error(data.detail || '请求失败');
+    }
+
+    // 保存数据
+    state.currentResponse = data;
+    state.originalSimilar = data.similar_questions;  // 保存原始相似题
+    state.isLoading = false;
+
+    // 社交证明+1
+    const total = (parseInt(localStorage.getItem('kaogong_solve_count') || '0')) + 1;
+    localStorage.setItem('kaogong_solve_count', total);
+    updateSocialProof();
+
+    // 保存到历史记录
+    saveHistory(questionText, data);
+
+    clearInterval(textInterval);
+    hideLoading();
+    showResult(data);
+
+  } catch (err) {
+    clearInterval(textInterval);
+    state.isLoading = false;
+    hideLoading();
+    showError(err.message);
+  }
+
+  $('submit-btn').disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════════
+// 重新讲解（点"没懂"）
+// ═══════════════════════════════════════════════════════════
+
+async function requestRephrase() {
+  if (state.isLoading || !state.currentResponse) return;
+  state.isLoading = true;
+
+  // 询问用户哪里不懂
+  const feedback = await askStuckReason();
+  if (feedback === null) {
+    state.isLoading = false;  // 取消时重置，否则按钮永久禁用
+    return;
+  }
+
+  // 隐藏操作按钮，显示重讲加载
+  $('action-buttons').classList.add('hidden');
+  $('similar-section').classList.add('hidden');
+  $('rephrase-loading').classList.remove('hidden');
+
+  try {
+    const reqBody = {
+      question_text: state.questionText,
+      previous_response_id: state.currentResponse.response_id,
+    };
+    if (feedback.reason) reqBody.stuck_reason = feedback.reason;
+    if (feedback.customQuestion) reqBody.custom_question = feedback.customQuestion;
+
+    const resp = await fetch(`${API_BASE}/api/rephrase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(data.detail || '重讲失败');
+    }
+
+    // 把当前讲解推入历史再更新
+    if (state.currentResponse) {
+      state.explanationHistory.push(state.currentResponse);
+    }
+    state.currentResponse = data;
+    state.showingHistoryIndex = -1;  // 默认看最新
+    state.isLoading = false;
+
+    $('rephrase-loading').classList.add('hidden');
+    showResult(data, true);  // isRephrase=true
+
+  } catch (err) {
+    state.isLoading = false;
+    $('rephrase-loading').classList.add('hidden');
+    $('action-buttons').classList.remove('hidden');
+    showError(err.message);
+  }
+}
+
+function askStuckReason() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black/40 z-50 flex items-end justify-center';
+    overlay.innerHTML = `
+      <div class="bg-white rounded-t-2xl w-full max-w-md p-5 animate-fadeInUp" style="max-height:90vh;overflow-y:auto;">
+        <p class="text-slate-800 font-semibold text-center mb-4">哪里没看懂？</p>
+
+        <!-- 预设选项 -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button class="btn-outline text-sm py-3 text-left px-3 reason-btn" data-reason="number">
+            <span class="block text-base mb-0.5">🔢</span>数字/计算没懂
+          </button>
+          <button class="btn-outline text-sm py-3 text-left px-3 reason-btn" data-reason="logic">
+            <span class="block text-base mb-0.5">🧩</span>逻辑没理顺
+          </button>
+          <button class="btn-outline text-sm py-3 text-left px-3 reason-btn" data-reason="formula">
+            <span class="block text-base mb-0.5">📐</span>公式不理解
+          </button>
+          <button class="btn-outline text-sm py-3 text-left px-3 reason-btn" data-reason="other">
+            <span class="block text-base mb-0.5">💬</span>其他...
+          </button>
+        </div>
+
+        <!-- 自主提问输入框 -->
+        <div id="custom-question-area" class="hidden mb-3">
+          <textarea id="custom-question-input"
+            rows="2"
+            placeholder="说说你哪里没看懂？比如：'第二步为什么用乘法而不是除法？'..."
+            class="w-full border border-slate-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+          ></textarea>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex gap-2">
+          <button class="flex-1 text-slate-400 text-sm py-2.5 cancel-btn border border-slate-200 rounded-xl">
+            取消
+          </button>
+          <button id="submit-reason-btn" class="flex-1 btn-primary py-2.5 text-sm">
+            🔄 重新讲解
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    let selectedReason = '';
+    const customArea = overlay.querySelector('#custom-question-area');
+    const customInput = overlay.querySelector('#custom-question-input');
+    const submitBtn = overlay.querySelector('#submit-reason-btn');
+
+    // 预设按钮点击：切换选中状态
+    overlay.querySelectorAll('.reason-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // 清除所有选中
+        overlay.querySelectorAll('.reason-btn').forEach(b => {
+          b.style.borderColor = '#e0e7ff';
+          b.style.background = '#fff';
+        });
+        // 选中当前
+        btn.style.borderColor = '#6366f1';
+        btn.style.background = '#eef2ff';
+        selectedReason = btn.dataset.reason;
+
+        // "其他"选项显示输入框
+        if (btn.dataset.reason === 'other') {
+          customArea.classList.remove('hidden');
+          setTimeout(() => customInput.focus(), 100);
+        } else {
+          customArea.classList.add('hidden');
+        }
+      });
+    });
+
+    // 提交按钮
+    submitBtn.addEventListener('click', () => {
+      const customQuestion = customInput.value.trim();
+      document.body.removeChild(overlay);
+      resolve({
+        reason: selectedReason,
+        customQuestion: customQuestion || null,
+      });
+    });
+
+    // 取消
+    overlay.querySelector('.cancel-btn').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(null);
+    });
+
+    // 点击遮罩关闭
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        resolve(null);
+      }
+    });
+
+    // 回车提交（Ctrl+Enter）
+    customInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        submitBtn.click();
+      }
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 显示结果
+// ═══════════════════════════════════════════════════════════
+
+function showResult(data, isRephrase = false) {
+  $('result-section').classList.remove('hidden');
+  $('action-buttons').classList.remove('hidden');
+  $('rephrase-loading').classList.add('hidden');
+
+  // 大白话
+  $('simple-explanation').textContent = data.simple_explanation;
+
+  // 题型标签
+  const tag = $('question-type-tag');
+  if (data.question_type && data.question_type !== '综合') {
+    tag.textContent = data.question_type;
+    tag.classList.remove('hidden');
+  } else {
+    tag.classList.add('hidden');
+  }
+
+  // 来自缓存提示
+  if (data.from_cache) {
+    tag.textContent = (tag.textContent ? tag.textContent + ' · ' : '') + '💨 缓存命中';
+    tag.classList.remove('hidden');
+  }
+
+  // 考点定位
+  const epTag = $('exam-point-tag');
+  if (data.exam_point) {
+    epTag.textContent = '📍 ' + data.exam_point;
+    epTag.classList.remove('hidden');
+  } else {
+    epTag.classList.add('hidden');
+  }
+
+  // 难度评级
+  const diffTag = $('difficulty-tag');
+  if (data.difficulty) {
+    diffTag.textContent = '难度 ' + data.difficulty;
+    diffTag.classList.remove('hidden');
+  } else {
+    diffTag.classList.add('hidden');
+  }
+
+  // 易错陷阱
+  const mistakeCard = $('mistake-card');
+  if (data.common_mistake) {
+    $('common-mistake').textContent = data.common_mistake;
+    mistakeCard.classList.remove('hidden');
+  } else {
+    mistakeCard.classList.add('hidden');
+  }
+
+  // 秒杀技巧
+  const tipCard = $('tip-card');
+  if (data.exam_tip) {
+    $('exam-tip').textContent = data.exam_tip;
+    tipCard.classList.remove('hidden');
+  } else {
+    tipCard.classList.add('hidden');
+  }
+
+  // 分步解析
+  const stepList = $('step-list');
+  stepList.innerHTML = '';
+  data.step_by_step.forEach((step, idx) => {
+    const div = document.createElement('div');
+    div.className = 'step-card animate-fadeInUp';
+    div.style.animationDelay = `${idx * 0.08}s`;
+    div.innerHTML = `<span class="step-number">${idx + 1}</span><span class="text-slate-700 text-sm leading-relaxed">${escapeHtml(step)}</span>`;
+    stepList.appendChild(div);
+  });
+
+  // 如果是rephrase，高亮提示
+  if (isRephrase) {
+    const banner = document.createElement('div');
+    banner.className = 'text-xs text-center text-warm-600 bg-warm-50 rounded-lg py-2 px-3 mb-3 animate-fadeInUp';
+    banner.textContent = '✨ 已换一个角度重新讲解';
+    stepList.insertBefore(banner, stepList.firstChild);
+  }
+
+  // 更新讲解历史切换条
+  updateHistoryToggle();
+
+  // 首次看到解析时提示追问功能
+  const seenHint = localStorage.getItem('kaogong_seen_rephrase_hint');
+  if (!seenHint) {
+    setTimeout(() => {
+      showToast('💡 没看懂？点"没懂，再讲一遍"换个角度讲解');
+    }, 1500);
+    localStorage.setItem('kaogong_seen_rephrase_hint', '1');
+  }
+
+  // 滚动到结果区
+  $('result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateHistoryToggle() {
+  const total = state.explanationHistory.length + 1;  // +1 是当前讲解
+  const toggle = $('history-toggle');
+  const info = $('history-info');
+  const btn = $('history-toggle-btn');
+
+  if (total <= 1) {
+    toggle.classList.add('hidden');
+    return;
+  }
+
+  toggle.classList.remove('hidden');
+  if (state.showingHistoryIndex >= 0) {
+    // 正在看历史
+    info.textContent = `正在看第 ${state.showingHistoryIndex + 1}/${total} 次讲解`;
+    btn.textContent = '返回最新 →';
+  } else {
+    // 正在看最新
+    info.textContent = `共 ${total} 次讲解记录`;
+    btn.textContent = '查看上次的 →';
+  }
+}
+
+function toggleHistoryView() {
+  if (state.showingHistoryIndex >= 0) {
+    // 返回最新
+    state.showingHistoryIndex = -1;
+    showResult(state.currentResponse);
+  } else {
+    // 看上次的（最新的一条历史）
+    state.showingHistoryIndex = state.explanationHistory.length - 1;
+    const oldData = state.explanationHistory[state.showingHistoryIndex];
+    showResult(oldData, false);
+  }
+}
+
+function showSimilarQuestions() {
+  $('action-buttons').classList.add('hidden');
+  $('similar-section').classList.remove('hidden');
+
+  const sqList = state.currentResponse?.similar_questions || state.originalSimilar;
+
+  const similarList = $('similar-list');
+  similarList.innerHTML = '';
+
+  if (!sqList || sqList.length === 0) {
+    similarList.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">暂无相似题推荐</p>';
+    return;
+  }
+
+  sqList.forEach((sq, idx) => {
+    const div = document.createElement('div');
+    div.className = 'animate-fadeInUp';
+    div.style.animationDelay = `${idx * 0.1}s`;
+    div.innerHTML = `
+      <div class="bg-slate-50 rounded-xl p-4 mb-3">
+        <div class="flex items-start gap-2 mb-2">
+          <span class="text-xs font-bold text-brand-500 mt-0.5">Q${idx + 1}</span>
+          <p class="text-sm text-slate-700 leading-relaxed flex-1">${escapeHtml(sq.question)}</p>
+        </div>
+        <div class="flex items-center justify-between pl-5">
+          <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
+            答案：${escapeHtml(sq.answer)}
+          </span>
+          <button class="similar-parse-btn text-xs text-brand-500 font-semibold bg-brand-50 hover:bg-brand-100 px-3 py-1 rounded-full transition"
+            data-question="${escapeHtml(sq.question)}">
+            🔍 解析这道
+          </button>
+        </div>
+      </div>
+    `;
+    // 事件绑定：避免内联JS中拼接复杂字符串
+    div.querySelector('.similar-parse-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const q = this.dataset.question;  // 从data属性取原始文本
+      $('question-input').value = q;
+      state.questionText = q;
+      hideResult();
+      doSubmit(q);
+    });
+    similarList.appendChild(div);
+  });
+
+  $('similar-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 加载 / 错误 状态
+// ═══════════════════════════════════════════════════════════
+
+function showLoading() {
+  $('loading-card').classList.remove('hidden');
+  $('loading-text').textContent = '老师正在读题...';
+}
+
+function hideLoading() {
+  $('loading-card').classList.add('hidden');
+}
+
+function hideResult() {
+  $('result-section').classList.add('hidden');
+  $('error-card').classList.add('hidden');
+  $('action-buttons').classList.add('hidden');
+  $('similar-section').classList.add('hidden');
+  $('rephrase-loading').classList.add('hidden');
+  $('mistake-card').classList.add('hidden');
+  $('tip-card').classList.add('hidden');
+  $('exam-point-tag').classList.add('hidden');
+  $('difficulty-tag').classList.add('hidden');
+  // 重置反馈栏
+  const bar = $('feedback-bar');
+  if (bar) { bar.style.display = ''; bar.style.opacity = '1'; }
+}
+
+function showError(message) {
+  $('error-card').classList.remove('hidden');
+  $('error-message').textContent = message;
+  $('error-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function resetAll() {
+  state.questionText = '';
+  state.correctAnswer = '';
+  state.currentResponse = null;
+  state.originalSimilar = null;
+  state.isLoading = false;
+  state.explanationHistory = [];
+  state.showingHistoryIndex = -1;
+  hideResult();
+  $('correct-answer-input').value = '';
+  hideLoading();
+  $('question-input').value = '';
+  $('result-section').classList.add('hidden');
+  $('error-card').classList.add('hidden');
+  $('notebook-page').classList.add('hidden');
+  $('history-page').classList.add('hidden');
+  switchPage('home');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 错题本（localStorage）
+// ═══════════════════════════════════════════════════════════
+
+function getNotebook() {
+  try {
+    return JSON.parse(localStorage.getItem('kaogong_notebook') || '[]');
+  } catch { return []; }
+}
+
+function saveNotebook(items) {
+  localStorage.setItem('kaogong_notebook', JSON.stringify(items));
+  updateNotebookBadge();
+}
+
+function saveToNotebook() {
+  const data = state.currentResponse;
+  if (!data) return;
+
+  const items = getNotebook();
+
+  // 用题目文本去重
+  const exists = items.some(item => item.question_text === state.questionText);
+  if (exists) {
+    showToast('这道题已经在错题本里了~ 📚');
+    return;
+  }
+
+  items.unshift({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    question_text: state.questionText,
+    simple_explanation: data.simple_explanation,
+    step_by_step: data.step_by_step,
+    similar_questions: data.similar_questions || state.originalSimilar,
+    question_type: data.question_type || '未分类',
+    saved_at: new Date().toISOString(),
+  });
+
+  saveNotebook(items);
+
+  // 轻提示
+  showToast('已收藏到错题本 ✅');
+}
+
+function removeFromNotebook(id) {
+  const items = getNotebook().filter(item => item.id !== id);
+  saveNotebook(items);
+  renderNotebook();
+  showToast('已移除');
+}
+
+function clearNotebook() {
+  if (!confirm('确定清空所有错题？此操作不可恢复。')) return;
+  saveNotebook([]);
+  notebookFilter = '全部';
+  // 重置筛选按钮样式
+  $('notebook-filters').querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.remove('bg-brand-50', 'text-brand-600');
+    btn.classList.add('bg-slate-100', 'text-slate-500');
+  });
+  const allBtn = $('notebook-filters').querySelector('[data-filter="全部"]');
+  if (allBtn) { allBtn.classList.remove('bg-slate-100', 'text-slate-500'); allBtn.classList.add('bg-brand-50', 'text-brand-600'); }
+  renderNotebook();
+}
+
+let notebookFilter = '全部';
+
+function renderNotebook() {
+  const allItems = getNotebook();
+  const items = notebookFilter === '全部'
+    ? allItems
+    : allItems.filter(item => item.question_type && item.question_type.includes(notebookFilter));
+
+  const list = $('notebook-list');
+  const empty = $('notebook-empty');
+  const count = $('notebook-count');
+
+  count.textContent = `共 ${items.length} 道` + (notebookFilter !== '全部' ? `（${notebookFilter}）` : '');
+
+  if (items.length === 0) {
+    empty.style.display = 'block';
+    list.querySelectorAll('.notebook-item').forEach(el => el.remove());
+  } else {
+    empty.style.display = 'none';
+  }
+
+  // 重建整个列表
+  list.innerHTML = '';
+  if (items.length === 0) return;
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'notebook-item';
+    div.innerHTML = `
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex-1 min-w-0" id="nb-main-${item.id}">
+          <p class="text-sm text-slate-800 font-medium line-clamp-2">${escapeHtml(item.question_text)}</p>
+          <div class="flex items-center gap-2 mt-1.5">
+            <span class="text-xs bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded">${escapeHtml(item.question_type)}</span>
+            <span class="text-xs text-slate-400">${formatDate(item.saved_at)}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button class="text-slate-300 hover:text-brand-500 text-xs p-1" title="重新讲解"
+            onclick="event.stopPropagation(); loadFromHistory('${item.id}', 'notebook')">🔄</button>
+          <button class="text-slate-300 hover:text-red-400 text-sm p-1" title="删除"
+            onclick="event.stopPropagation(); removeFromNotebook('${item.id}')">🗑️</button>
+        </div>
+      </div>
+    `;
+
+    // 点击展开详情
+    div.querySelector(`#nb-main-${item.id}`).addEventListener('click', () => {
+      loadNotebookItem(item);
+    });
+
+    list.appendChild(div);
+  });
+
+  updateNotebookBadge();
+}
+
+function loadNotebookItem(item) {
+  state.questionText = item.question_text;
+  state.currentResponse = {
+    response_id: item.id,
+    simple_explanation: item.simple_explanation,
+    step_by_step: item.step_by_step,
+    similar_questions: item.similar_questions,
+    question_type: item.question_type,
+    from_cache: true,
+    is_rephrase: false,
+  };
+  state.originalSimilar = item.similar_questions;
+  $('question-input').value = item.question_text;
+  switchPage('home');
+  hideResult();
+  showResult(state.currentResponse);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 从错题本或历史中加载题目并重新讲解
+function loadFromHistory(id, source) {
+  const items = source === 'notebook' ? getNotebook() : getHistory();
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  state.questionText = item.question_text;
+  $('question-input').value = item.question_text;
+  switchPage('home');
+  hideResult();
+  showLoading();
+  showToast('正在重新讲解... 🔄');
+  doSubmit(item.question_text);
+}
+
+function updateNotebookBadge() {
+  const count = getNotebook().length;
+  const badge = $('notebook-badge');
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 历史记录（localStorage，最近50条）
+// ═══════════════════════════════════════════════════════════
+
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem('kaogong_history') || '[]');
+  } catch { return []; }
+}
+
+function saveHistory(questionText, data) {
+  const items = getHistory();
+  // 去重：已存在则移到最前面
+  const idx = items.findIndex(i => i.question_text === questionText);
+  if (idx >= 0) items.splice(idx, 1);
+
+  items.unshift({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    question_text: questionText,
+    simple_explanation: data.simple_explanation,
+    step_by_step: data.step_by_step,
+    similar_questions: data.similar_questions || state.originalSimilar,
+    question_type: data.question_type || '未分类',
+    saved_at: new Date().toISOString(),
+  });
+
+  // 只保留最近50条
+  if (items.length > 50) items.length = 50;
+
+  localStorage.setItem('kaogong_history', JSON.stringify(items));
+}
+
+function clearHistory() {
+  if (!confirm('确定清空所有历史记录？')) return;
+  localStorage.setItem('kaogong_history', '[]');
+  renderHistory();
+}
+
+function renderHistory() {
+  const items = getHistory();
+  const list = $('history-list');
+  const empty = $('history-empty');
+  const count = $('history-count');
+
+  count.textContent = `最近 ${items.length} 道`;
+
+  if (items.length === 0) {
+    empty.style.display = 'block';
+    list.querySelectorAll('.notebook-item').forEach(el => el.remove());
+    return;
+  }
+
+  empty.style.display = 'none';
+  list.innerHTML = '';
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'notebook-item';
+    div.innerHTML = `
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex-1 min-w-0 cursor-pointer" id="hist-main-${item.id}">
+          <p class="text-sm text-slate-800 font-medium line-clamp-2">${escapeHtml(item.question_text)}</p>
+          <div class="flex items-center gap-2 mt-1.5">
+            <span class="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">${escapeHtml(item.question_type)}</span>
+            <span class="text-xs text-slate-400">${formatDate(item.saved_at)}</span>
+          </div>
+        </div>
+        <button class="text-slate-300 hover:text-brand-500 text-xs p-1 flex-shrink-0" title="重新讲解"
+          onclick="event.stopPropagation(); loadFromHistory('${item.id}', 'history')">🔄</button>
+      </div>
+    `;
+
+    div.querySelector(`#hist-main-${item.id}`).addEventListener('click', () => {
+      state.questionText = item.question_text;
+      state.currentResponse = {
+        response_id: item.id,
+        simple_explanation: item.simple_explanation,
+        step_by_step: item.step_by_step,
+        similar_questions: item.similar_questions,
+        question_type: item.question_type,
+        from_cache: true,
+        is_rephrase: false,
+      };
+      state.originalSimilar = item.similar_questions;
+      $('question-input').value = item.question_text;
+      switchPage('home');
+      hideResult();
+      showResult(state.currentResponse);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    list.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// 示例题目
+// ═══════════════════════════════════════════════════════════
+
+function loadDemoQuestion() {
+  const demos = [
+    { q: '甲、乙两人从相距100公里的两地同时出发相向而行，甲的速度是6公里/小时，乙的速度是4公里/小时，问几小时后两人相遇？', a: '10小时' },
+    { q: '一项工程，甲单独做需要12天完成，乙单独做需要18天完成。两人合作，需要多少天完成？', a: '7.2天' },
+    { q: '如果天下雨，那么地面湿。现在地面没有湿，由此可以推出什么？A.天没下雨  B.地湿了  C.下过雨  D.无法判断', a: 'A' },
+  ];
+  const demo = demos[Math.floor(Math.random() * demos.length)];
+  $('question-input').value = demo.q;
+  $('correct-answer-input').value = demo.a;
+  showToast('已填入示例题和答案，点讲解试试 👆');
+}
+
+// ═══════════════════════════════════════════════════════════
+// 工具函数
+// ═══════════════════════════════════════════════════════════
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatDate(isoStr) {
+  const d = new Date(isoStr);
+  const now = new Date();
+  const diff = now - d;
+
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${month}月${day}日`;
+}
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-sm px-5 py-2.5 rounded-full z-50 shadow-lg animate-fadeInUp';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => document.body.removeChild(toast), 300);
+  }, 2000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// 反馈投票
+// ═══════════════════════════════════════════════════════════
+
+function voteFeedback(type) {
+  const count = JSON.parse(localStorage.getItem('kaogong_feedback') || '{"useful":0,"not_useful":0}');
+  count[type] = (count[type] || 0) + 1;
+  localStorage.setItem('kaogong_feedback', JSON.stringify(count));
+  showToast(type === 'useful' ? '谢谢！这对AI有很大帮助 👍' : '收到，我们会继续改进 🙏');
+  // 隐藏投票栏
+  const bar = document.getElementById('feedback-bar');
+  if (bar) bar.style.opacity = '0.5';
+  setTimeout(() => { if (bar) bar.style.display = 'none'; }, 500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// 分享
+// ═══════════════════════════════════════════════════════════
+
+function shareApp() {
+  const text = '📚 大白话考公 — 每一道错题，都值得被讲透\n看不懂的解析，换个角度再讲。\n' + location.href;
+  if (navigator.share) {
+    navigator.share({ title: '公考AI陪练', text: text, url: location.href }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('链接已复制，去微信/群聊粘贴分享 ✨')).catch(() => {
+      prompt('复制这个链接分享给考友：', location.href);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 社交证明计数器
+// ═══════════════════════════════════════════════════════════
+
+function updateSocialProof() {
+  const count = parseInt(localStorage.getItem('kaogong_solve_count') || '0');
+  if (count > 5) {
+    document.getElementById('social-proof').classList.remove('hidden');
+    document.getElementById('solve-count').textContent = count;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 初始化
+// ═══════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateNotebookBadge();
+  updateSocialProof();
+
+  // PWA：注册service worker
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('/sw.js');
+  }
+
+  // 键盘快捷键
+  document.addEventListener('keydown', (e) => {
+    // Escape：关闭任何弹出的页面/弹窗
+    if (e.key === 'Escape') {
+      if (!$('notebook-page').classList.contains('hidden') || !$('history-page').classList.contains('hidden')) {
+        switchPage('home');
+      }
+      // 关闭"没懂"弹窗（如果开着）
+      const overlay = document.querySelector('.fixed.inset-0.bg-black\\/40');
+      if (overlay) {
+        overlay.querySelector('.cancel-btn')?.click();
+      }
+    }
+  });
+
+  // 监听回车键提交（Ctrl+Enter）
+  $('question-input').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      submitQuestion();
+    }
+  });
+
+  // 拖拽上传（桌面端）
+  const dropzone = $('camera-dropzone');
+  if (dropzone) {
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-brand-500', 'bg-brand-50');
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-brand-500', 'bg-brand-50');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-brand-500', 'bg-brand-50');
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const input = $('camera-input');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        handleImageUpload(input);
+      }
+    });
+  }
+
+  // 错题本筛选按钮事件
+  $('notebook-filters').addEventListener('click', (e) => {
+    if (e.target.classList.contains('filter-btn')) {
+      notebookFilter = e.target.dataset.filter;
+      // 更新选中样式
+      $('notebook-filters').querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-50', 'text-brand-600');
+        btn.classList.add('bg-slate-100', 'text-slate-500');
+      });
+      e.target.classList.remove('bg-slate-100', 'text-slate-500');
+      e.target.classList.add('bg-brand-50', 'text-brand-600');
+      renderNotebook();
+    }
+  });
+
+  console.log('📚 公考AI陪练 前端已就绪');
+  console.log('   API地址:', API_BASE || '(同域)');
+  console.log('   微信环境:', isWeChat ? '✅ 是' : '❌ 否');
+  console.log('   提示: Ctrl+Enter 快速提交');
+
+  // ── 微信 JS-SDK 初始化 ────────────────────────────
+  if (isWeChat) {
+    initWechatSDK();
+  }
+});
+
+async function initWechatSDK() {
+  // 动态加载微信 JS-SDK
+  const script = document.createElement('script');
+  script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js';
+  script.onload = async () => {
+    try {
+      const url = location.href.split('#')[0];
+      const resp = await fetch(`${API_BASE}/api/wechat/config?url=${encodeURIComponent(url)}`);
+      if (!resp.ok) {
+        console.log('微信SDK未配置（缺少WECHAT_APPID），跳过');
+        return;
+      }
+      const cfg = await resp.json();
+
+      wx.config({
+        debug: false,
+        appId: cfg.appId,
+        timestamp: cfg.timestamp,
+        nonceStr: cfg.nonceStr,
+        signature: cfg.signature,
+        jsApiList: [
+          'onMenuShareTimeline',   // 分享到朋友圈
+          'onMenuShareAppMessage', // 分享给朋友
+          'hideMenuItems',         // 隐藏菜单项
+        ],
+      });
+
+      wx.ready(() => {
+        console.log('✅ 微信JS-SDK已就绪');
+        // 自定义分享文案
+        const shareData = {
+          title: '大白话考公 — 每道题都讲大白话',
+          desc: '拍照/粘贴题目，AI分步讲解，举一反三巩固练习',
+          link: location.href,
+          imgUrl: '',  // 可放一个120x120的logo
+        };
+        wx.onMenuShareTimeline(shareData);
+        wx.onMenuShareAppMessage(shareData);
+      });
+
+      wx.error((err) => {
+        console.log('微信SDK错误（可忽略）:', err);
+      });
+    } catch (e) {
+      console.log('微信SDK初始化失败（可忽略）:', e);
+    }
+  };
+  document.head.appendChild(script);
+}
+</script>
+
+</body>
+</html>
